@@ -1,0 +1,20 @@
+{
+  "name": "media-converter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Convert and trim audio or video in the browser with ffmpeg.wasm. Files never leave the device.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "hash": "node scripts/hash-asset.mjs",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test \"tests/unit/**/*.test.js\"",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

@@ -1,0 +1,237 @@
+:root {
+  /* The page is always dark; "light dark" would give light dropdown lists with light text. */
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #111;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+  color: #f3f3f3;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  letter-spacing: 0.08em;
+}
+
+p.subtitle {
+  margin-top: 0.35rem;
+  color: #a9bacf;
+  font-size: 1rem;
+}
+
+form,
+fieldset {
+  display: grid;
+  gap: 1rem;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.panel {
+  background: rgba(7, 12, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 28px rgba(1, 6, 17, 0.65);
+}
+
+.panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
+  color: #f5faff;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+input,
+select {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+}
+
+select option {
+  background: #1b2738;
+}
+
+input:disabled,
+select:disabled {
+  opacity: 0.5;
+}
+
+input[type="range"] {
+  accent-color: #56ccf2;
+}
+
+.dropzone {
+  padding: 0.75rem;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone.dragging {
+  border-color: #56ccf2;
+  background: rgba(86, 204, 242, 0.08);
+}
+
+.inline {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.inline label {
+  flex: 1 1 200px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #56ccf2, #2f80ed);
+  padding: 0.9rem 1.8rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #062847;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f3f3f3;
+}
+
+button:disabled {
+  filter: grayscale(0.6);
+  cursor: not-allowed;
+}
+
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.status-message {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.4;
+}
+
+.status-message.error {
+  color: #ff8a80;
+}
+
+.status-message.success {
+  color: #8be9a8;
+}
+
+progress {
+  width: 100%;
+  height: 0.6rem;
+  margin-top: 0.75rem;
+  accent-color: #56ccf2;
+}
+
+.status-log {
+  max-height: 260px;
+  margin: 0.5rem 0 0;
+  font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  line-height: 1.4;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+details {
+  margin-top: 0.75rem;
+}
+
+summary {
+  cursor: pointer;
+  color: #9db0c0;
+  font-size: 0.9rem;
+}
+
+#downloadLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  text-decoration: none;
+  color: #fdfdfd;
+  font-weight: 600;
+}
+
+#downloadLink[hidden] {
+  display: none;
+}
+
+#downloadLink::before {
+  content: "\2193";
+  font-size: 1.25rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #9db0c0;
+}
+
+.hint.warning {
+  color: #ffd27f;
+}
+
+.limits ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: #c8d4e0;
+}
+
+@media (max-width: 640px) {
+  .inline {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,7 @@
+# Store text with LF line endings so the repo behaves the same on every OS.
+* text=auto eol=lf
+
+*.webm binary
+*.mp4 binary
+*.png binary
+*.ico binary
