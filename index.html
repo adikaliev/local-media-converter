@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Converter</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background-color: #111;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+        color: #f3f3f3;
+      }
+
+      .page {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 2.8rem);
+        letter-spacing: 0.08em;
+      }
+
+      p.subtitle {
+        margin-top: 0.35rem;
+        color: #a9bacf;
+        font-size: 1rem;
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .panel {
+        background: rgba(7, 12, 18, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 20px 28px rgba(1, 6, 17, 0.65);
+      }
+
+      .panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1.2rem;
+        color: #f5faff;
+      }
+
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.95rem;
+      }
+
+      input,
+      select {
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 0.65rem 0.75rem;
+        font-size: 1rem;
+        background: rgba(255, 255, 255, 0.06);
+        color: inherit;
+      }
+
+      input[type="range"] {
+        accent-color: #56ccf2;
+      }
+
+      .inline {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .inline label {
+        flex: 1 1 200px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(120deg, #56ccf2, #2f80ed);
+        padding: 0.9rem 1.8rem;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #062847;
+        cursor: pointer;
+        transition: transform 0.15s ease, filter 0.15s ease;
+      }
+
+      button:disabled {
+        filter: grayscale(0.6);
+        cursor: not-allowed;
+      }
+
+      button:not(:disabled):hover {
+        transform: translateY(-1px);
+      }
+
+      .status-log {
+        min-height: 70px;
+        font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+        font-size: 0.85rem;
+        background: rgba(0, 0, 0, 0.45);
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
+        line-height: 1.4;
+        overflow-y: auto;
+        white-space: pre-line;
+      }
+
+      #downloadLink {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        text-decoration: none;
+        color: #fdfdfd;
+        font-weight: 600;
+      }
+
+      #downloadLink::before {
+        content: "\2193";
+        font-size: 1.25rem;
+      }
+
+      .hint {
+        font-size: 0.85rem;
+        color: #9db0c0;
+      }
+
+      @media (max-width: 640px) {
+        .inline {
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Media Converter</h1>
+        <p class="subtitle">Convert, trim, and export audio or video straight in your browser.</p>
+      </header>
+
+      <form id="processForm" class="panel">
+        <section>
+          <h2>Source Media</h2>
+          <label>
+            Choose file
+            <input type="file" id="sourceFile" accept="audio/*,video/*" required />
+          </label>
+          <p id="fileInfo" class="hint">Waiting for a file...</p>
+        </section>
+
+        <section>
+          <h2>Conversion Mode</h2>
+          <label>
+            Target
+            <select id="conversionMode">
+              <option value="video">Video</option>
+              <option value="audio">Audio</option>
+            </select>
+          </label>
+          <label>
+            Output extension
+            <select id="extensionSelect"></select>
+          </label>
+        </section>
+
+        <section>
+          <h2>Trim Range (optional)</h2>
+          <div class="inline">
+            <label>
+              Start time (seconds)
+              <input type="number" min="0" step="0.1" id="startTime" placeholder="0" />
+            </label>
+            <label>
+              End time (seconds)
+              <input type="number" min="0" step="0.1" id="endTime" placeholder="leave empty for full length" />
+            </label>
+          </div>
+          <p class="hint" id="durationHint"></p>
+        </section>
+
+        <section>
+          <h2>Quality</h2>
+          <div class="inline">
+            <label>
+              Video quality (lower is better)
+              <input type="range" min="15" max="35" step="1" value="23" id="videoQuality" />
+              <span class="hint" id="videoQualityLabel">CRF 23 - balanced</span>
+            </label>
+            <label>
+              Audio bitrate
+              <select id="audioBitrate">
+                <option value="128k">128 kbps</option>
+                <option value="192k" selected>192 kbps</option>
+                <option value="256k">256 kbps</option>
+                <option value="320k">320 kbps</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section style="display: flex; justify-content: flex-end">
+          <button id="convertButton" type="submit" disabled>Process media</button>
+        </section>
+      </form>
+
+      <section class="panel" style="margin-top: 1.25rem">
+        <h2>Status</h2>
+        <div class="status-log" id="statusLog">Select a file to get started.</div>
+        <a id="downloadLink" href="#" download hidden>Download result</a>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        const FFMPEG_SOURCES = [
+          "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js",
+          "https://unpkg.com/@ffmpeg/ffmpeg@0.12.6/dist/ffmpeg.min.js"
+        ];
+        let ffmpegInstance = null;
+        let fetchFileFn = null;
+        let ffmpegScriptPromise = null;
+        let selectedFile = null;
+        let mediaDuration = 0;
+
+        const statusLog = document.getElementById("statusLog");
+        const fileInfo = document.getElementById("fileInfo");
+        const durationHint = document.getElementById("durationHint");
+        const convertButton = document.getElementById("convertButton");
+        const downloadLink = document.getElementById("downloadLink");
+        const modeSelect = document.getElementById("conversionMode");
+        const extensionSelect = document.getElementById("extensionSelect");
+        const videoQualityInput = document.getElementById("videoQuality");
+        const videoQualityLabel = document.getElementById("videoQualityLabel");
+        const sourceFileInput = document.getElementById("sourceFile");
+
+        const videoExtensions = [
+          { label: "MP4 (H.264 + AAC)", value: "mp4", args: ["-c:v", "libx264", "-preset", "medium", "-movflags", "+faststart"] },
+          { label: "WebM (VP9 + Opus)", value: "webm", args: ["-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "30", "-c:a", "libopus"] },
+          { label: "AVI (MPEG4 + MP3)", value: "avi", args: ["-c:v", "mpeg4", "-q:v", "5", "-c:a", "libmp3lame"] }
+        ];
+
+        const audioExtensions = [
+          { label: "MP3", value: "mp3", args: ["-c:a", "libmp3lame"] },
+          { label: "AAC", value: "aac", args: ["-c:a", "aac"] },
+          { label: "WAV (uncompressed)", value: "wav", args: ["-c:a", "pcm_s16le"] },
+          { label: "FLAC", value: "flac", args: ["-c:a", "flac"] }
+        ];
+
+        function log(message) {
+          statusLog.textContent = message;
+        }
+
+        function appendLog(message) {
+          statusLog.textContent += `\n${message}`;
+        }
+
+        function refreshExtensionOptions() {
+          const options = modeSelect.value === "video" ? videoExtensions : audioExtensions;
+          extensionSelect.innerHTML = "";
+          for (const option of options) {
+            const opt = document.createElement("option");
+            opt.value = option.value;
+            opt.textContent = option.label;
+            extensionSelect.appendChild(opt);
+          }
+        }
+
+        refreshExtensionOptions();
+
+        function describeQuality(crf) {
+          if (crf <= 18) return "CRF " + crf + " - visually lossless";
+          if (crf <= 23) return "CRF " + crf + " - balanced";
+          if (crf <= 28) return "CRF " + crf + " - lean";
+          return "CRF " + crf + " - small";
+        }
+
+        videoQualityInput.addEventListener("input", () => {
+          videoQualityLabel.textContent = describeQuality(Number(videoQualityInput.value));
+        });
+
+        modeSelect.addEventListener("change", () => {
+          refreshExtensionOptions();
+          if (modeSelect.value === "audio") {
+            videoQualityInput.disabled = true;
+          } else {
+            videoQualityInput.disabled = false;
+          }
+        });
+
+        sourceFileInput.addEventListener("change", async (event) => {
+          const file = event.target.files && event.target.files[0];
+          selectedFile = file || null;
+          downloadLink.hidden = true;
+
+          if (!file) {
+            fileInfo.textContent = "Waiting for a file...";
+            convertButton.disabled = true;
+            log("Select a file to get started.");
+            return;
+          }
+
+          const isVideo = file.type.startsWith("video/");
+          const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+          fileInfo.textContent = `${file.name} (${sizeMb} MB) - ${isVideo ? "Video" : "Audio"}`;
+
+          if (isVideo) {
+            modeSelect.disabled = false;
+            modeSelect.value = "video";
+            videoQualityInput.disabled = false;
+          } else {
+            modeSelect.value = "audio";
+            modeSelect.disabled = true;
+            videoQualityInput.disabled = true;
+          }
+          refreshExtensionOptions();
+
+          convertButton.disabled = false;
+          log(`Ready to convert ${file.name}. Configure options and hit Process media.`);
+          durationHint.textContent = "Detecting duration...";
+          mediaDuration = 0;
+
+          const objectUrl = URL.createObjectURL(file);
+          const probe = document.createElement(isVideo ? "video" : "audio");
+          probe.preload = "metadata";
+          probe.src = objectUrl;
+          probe.onloadedmetadata = () => {
+            mediaDuration = probe.duration;
+            if (Number.isFinite(mediaDuration)) {
+              durationHint.textContent = `Detected duration: ${mediaDuration.toFixed(2)} seconds`;
+            } else {
+              durationHint.textContent = "Could not detect duration.";
+            }
+            URL.revokeObjectURL(objectUrl);
+          };
+          probe.onerror = () => {
+            durationHint.textContent = "Could not detect duration.";
+            URL.revokeObjectURL(objectUrl);
+          };
+        });
+
+        function loadFfmpegScript() {
+          if (window.FFmpeg) {
+            return Promise.resolve();
+          }
+          if (!ffmpegScriptPromise) {
+            ffmpegScriptPromise = (async () => {
+              if (!FFMPEG_SOURCES.length) {
+                throw new Error("No FFmpeg sources configured.");
+              }
+              let lastError = null;
+              for (const source of FFMPEG_SOURCES) {
+                try {
+                  await new Promise((resolve, reject) => {
+                    const script = document.createElement("script");
+                    script.src = source;
+                    script.async = true;
+                    script.crossOrigin = "anonymous";
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error(`Failed to load FFmpeg helper from ${source}`));
+                    document.head.appendChild(script);
+                  });
+                  if (window.FFmpeg) {
+                    return;
+                  }
+                } catch (err) {
+                  lastError = err;
+                }
+              }
+              throw lastError || new Error("Unable to load FFmpeg helper.");
+            })().catch((error) => {
+              log(error.message);
+              log("Place ffmpeg.min.js next to this HTML file (or adjust FFMPEG_SOURCES) if you need offline usage.");
+              throw error;
+            });
+          }
+          return ffmpegScriptPromise;
+        }
+
+        async function ensureFFmpegLoaded() {
+          await loadFfmpegScript();
+          if (!window.FFmpeg) {
+            throw new Error("FFmpeg helper is not available.");
+          }
+
+          if (!ffmpegInstance || !fetchFileFn) {
+            const { createFFmpeg, fetchFile } = window.FFmpeg;
+            fetchFileFn = fetchFile;
+            ffmpegInstance = createFFmpeg({ log: true });
+          }
+
+          if (!ffmpegInstance.isLoaded()) {
+            log("Downloading FFmpeg core (~25MB)...");
+            await ffmpegInstance.load();
+            appendLog("FFmpeg ready.");
+          }
+
+          return ffmpegInstance;
+        }
+
+        function getOutputMime(mode, extension) {
+          if (mode === "video") {
+            switch (extension) {
+              case "mp4":
+                return "video/mp4";
+              case "webm":
+                return "video/webm";
+              case "avi":
+                return "video/x-msvideo";
+              default:
+                return "application/octet-stream";
+            }
+          }
+          switch (extension) {
+            case "mp3":
+              return "audio/mpeg";
+            case "aac":
+              return "audio/aac";
+            case "wav":
+              return "audio/wav";
+            case "flac":
+              return "audio/flac";
+            default:
+              return "application/octet-stream";
+          }
+        }
+
+        async function processMedia(event) {
+          event.preventDefault();
+          if (!selectedFile) {
+            log("Please choose a media file first.");
+            return;
+          }
+
+          convertButton.disabled = true;
+          log("Preparing conversion...");
+
+          const ffmpeg = await ensureFFmpegLoaded();
+
+          const inputExt = selectedFile.name.includes(".")
+            ? selectedFile.name.slice(selectedFile.name.lastIndexOf("."))
+            : "";
+          const inputName = `input${inputExt}`;
+          ffmpeg.FS("writeFile", inputName, await fetchFileFn(selectedFile));
+
+          const startTime = document.getElementById("startTime").value;
+          const endTime = document.getElementById("endTime").value;
+          const audioBitrate = document.getElementById("audioBitrate").value;
+          const crf = videoQualityInput.value;
+          const mode = modeSelect.value;
+          const extension = extensionSelect.value;
+          const outputName = `output.${extension}`;
+
+          const timeArgs = [];
+          if (startTime) timeArgs.push("-ss", startTime);
+          if (endTime) timeArgs.push("-to", endTime);
+
+          let args = [];
+          if (mode === "video") {
+            const codecArgs = videoExtensions.find((option) => option.value === extension)?.args || [];
+            args = [...timeArgs, "-i", inputName, ...codecArgs, "-crf", crf, "-c:a", "aac", "-b:a", audioBitrate, outputName];
+          } else {
+            const codecArgs = audioExtensions.find((option) => option.value === extension)?.args || [];
+            args = [...timeArgs, "-i", inputName, "-vn", ...codecArgs, "-b:a", audioBitrate, outputName];
+          }
+
+          try {
+            appendLog(`Running ffmpeg ${args.join(" ")}`);
+            await ffmpeg.run(...args);
+
+            const data = ffmpeg.FS("readFile", outputName);
+            const blob = new Blob([data.buffer], { type: getOutputMime(mode, extension) });
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            const defaultName = selectedFile.name.replace(/\.[^/.]+$/, "") || "converted";
+            downloadLink.download = `${defaultName}.${extension}`;
+            downloadLink.hidden = false;
+            appendLog("Conversion complete. Click the link below to download your file.");
+          } catch (error) {
+            console.error(error);
+            appendLog(`Conversion failed: ${error.message}`);
+          } finally {
+            convertButton.disabled = false;
+            ffmpeg.FS("unlink", inputName);
+            const entries = ffmpeg.FS("readdir", "/");
+            if (entries.includes(outputName)) {
+              ffmpeg.FS("unlink", outputName);
+            }
+          }
+        }
+
+        document.getElementById("processForm").addEventListener("submit", processMedia);
+      })();
+    </script>
+  </body>
+</html>
