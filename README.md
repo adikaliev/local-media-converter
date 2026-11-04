@@ -69,10 +69,10 @@ copy, failure recovery and Cancel.
 
 ## Deploy to GitHub Pages
 
-1. Push the repository to GitHub. On the Free plan, Pages requires a public repository; private repositories need
-   Pro, Team or Enterprise.
+1. Push the repository to GitHub as `local-media-converter`. On the Free plan, Pages requires a public repository;
+   private repositories need Pro, Team or Enterprise.
 2. In the repository, open **Settings → Pages** and choose **Deploy from a branch**, branch `main`, folder `/ (root)`.
-3. The site is published at `https://<user>.github.io/<repo>/`.
+3. The site is published at `https://<user>.github.io/local-media-converter/`.
 
 `.nojekyll` turns off Jekyll processing, so files are served as they are. No headers or build step are needed.
 

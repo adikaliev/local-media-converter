@@ -1,5 +1,5 @@
 {
-  "name": "media-converter",
+  "name": "local-media-converter",
   "version": "1.0.0",
   "private": true,
   "description": "Convert and trim audio or video in the browser with ffmpeg.wasm. Files never leave the device.",
