@@ -17,6 +17,8 @@ body {
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
   display: grid;
+  /* minmax(0, ...) lets the column shrink below its content, so wide controls can't overflow small screens. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
 }
 
@@ -40,6 +42,7 @@ p.subtitle {
 form,
 fieldset {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -152,6 +155,7 @@ button:not(:disabled):hover {
   margin: 0;
   white-space: pre-line;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .status-message.error {
@@ -199,6 +203,7 @@ summary {
   gap: 0.5rem;
   margin-top: 0.75rem;
   text-decoration: none;
+  overflow-wrap: anywhere;
   color: #fdfdfd;
   font-weight: 600;
 }
@@ -215,6 +220,7 @@ summary {
 .hint {
   font-size: 0.85rem;
   color: #9db0c0;
+  overflow-wrap: anywhere;
 }
 
 .hint.warning {
@@ -233,5 +239,10 @@ summary {
 @media (max-width: 640px) {
   .inline {
     flex-direction: column;
+  }
+
+  /* In a column, the 200px flex-basis would set each field's height and leave large gaps. */
+  .inline label {
+    flex: 0 0 auto;
   }
 }

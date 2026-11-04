@@ -12,6 +12,7 @@ import {
   formatClock,
   formatOptions,
   outputFileName,
+  progressRatio,
   resolveTrim,
   summarizeFailure
 } from "./media.js";
@@ -41,6 +42,7 @@ const durationHint = document.getElementById("durationHint");
 const videoQualityInput = document.getElementById("videoQuality");
 const videoQualityLabel = document.getElementById("videoQualityLabel");
 const audioBitrateSelect = document.getElementById("audioBitrate");
+const speedSelect = document.getElementById("speedSelect");
 const convertButton = document.getElementById("convertButton");
 const cancelButton = document.getElementById("cancelButton");
 const statusMessage = document.getElementById("statusMessage");
@@ -61,10 +63,10 @@ ffmpeg.onLog = ({ message }) => {
   // ffmpeg.wasm prints "Aborted()" at the end of every run, including successful ones.
   if (message !== "Aborted()") appendLog(message);
 };
-ffmpeg.onProgress = ({ progress, time }) => {
+ffmpeg.onProgress = (event) => {
   if (!run) return;
-  // FFmpeg's own ratio is relative to the whole input, so prefer the trimmed length when known.
-  setProgress(run.expected ? time / 1e6 / run.expected : progress);
+  const ratio = progressRatio(event, run.expected);
+  if (ratio !== null) setProgress(ratio);
 };
 ffmpeg.onDownloadProgress = (received, total) => {
   engineStatus.textContent = `Downloading FFmpeg engine... ${Math.round((received / total) * 100)}%`;
@@ -76,10 +78,8 @@ function setStatus(message, tone = "") {
 }
 
 function setProgress(ratio) {
-  if (!Number.isFinite(ratio)) return;
-  const clamped = Math.min(Math.max(ratio, 0), 1);
-  progressBar.value = clamped;
-  setStatus(`Converting... ${Math.round(clamped * 100)}%${run?.notice ? `\n${run.notice}` : ""}`);
+  progressBar.value = ratio;
+  setStatus(`Converting... ${Math.round(ratio * 100)}%${run?.notice ? `\n${run.notice}` : ""}`);
 }
 
 function appendLog(line) {
@@ -135,6 +135,7 @@ function updateControls() {
   const format = findFormat(modeSelect.value, formatSelect.value);
   videoQualityInput.disabled = !encode || modeSelect.value === "audio";
   audioBitrateSelect.disabled = !encode || Boolean(format?.lossless);
+  speedSelect.disabled = !encode || !format?.usesSpeed;
   methodHint.textContent = encode ? ENCODE_HINT : COPY_HINT;
 }
 
@@ -237,7 +238,8 @@ async function processMedia(event) {
     method,
     trim,
     quality: Number(videoQualityInput.value),
-    audioBitrate: Number(audioBitrateSelect.value)
+    audioBitrate: Number(audioBitrateSelect.value),
+    speed: speedSelect.value
   });
 
   clearResult();

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import {
+  FORMATS,
   SOURCE_FORMAT,
   buildArgs,
   detectKind,
@@ -11,6 +12,7 @@ import {
   formatOptions,
   outputFileName,
   parseTime,
+  progressRatio,
   resolveTrim,
   summarizeFailure
 } from "../../js/media.js";
@@ -87,6 +89,26 @@ describe("expectedDuration", () => {
   });
 });
 
+describe("progressRatio", () => {
+  test("uses the trimmed length when known, otherwise FFmpeg's own ratio", () => {
+    assert.equal(progressRatio({ progress: 0.1, time: 1_500_000 }, 3), 0.5);
+    assert.equal(progressRatio({ progress: 0.25, time: 1_500_000 }, null), 0.25);
+  });
+
+  test("clamps to the 0-1 range", () => {
+    assert.equal(progressRatio({ progress: 1, time: 2_020_136 }, 2), 1);
+    assert.equal(progressRatio({ progress: -0.5, time: 0 }, null), 0);
+  });
+
+  test("drops the garbage first event the engine sometimes sends (regression: it showed as 100%)", () => {
+    const garbage = { progress: 461168601842.7388, time: 9223372036854776000 };
+    assert.equal(progressRatio(garbage, 2), null);
+    assert.equal(progressRatio(garbage, null), null);
+    assert.equal(progressRatio({ progress: NaN, time: 0 }, null), null);
+    assert.equal(progressRatio({ progress: 0, time: -1 }, 2), null);
+  });
+});
+
 describe("detectKind", () => {
   test("uses the MIME type when present", () => {
     assert.equal(detectKind("a.bin", "video/mp4"), "video");
@@ -113,6 +135,21 @@ describe("buildArgs", () => {
     assert.equal(lastValue(args, "-b:a"), "192k");
     assert.equal(lastValue(args, "-movflags"), "+faststart");
     assert.equal(args.at(-1), "/output.mp4");
+  });
+
+  test("speed picks the H.264 preset for MP4 and MKV", () => {
+    assert.equal(lastValue(buildArgs({ ...base, speed: "balanced" }), "-preset"), "veryfast");
+    assert.equal(lastValue(buildArgs({ ...base, speed: "fast" }), "-preset"), "ultrafast");
+    assert.equal(lastValue(buildArgs({ ...base, outputExt: "mkv", outputPath: "/output.mkv", speed: "fast" }), "-preset"), "ultrafast");
+  });
+
+  test("speed doesn't change formats without an H.264 preset", () => {
+    for (const outputExt of ["webm", "avi"]) {
+      const args = buildArgs({ ...base, outputExt, outputPath: `/output.${outputExt}`, speed: "fast" });
+      assert.ok(!args.includes("-preset"), outputExt);
+    }
+    const audio = buildArgs({ ...base, mode: "audio", outputExt: "mp3", outputPath: "/output.mp3", speed: "fast" });
+    assert.ok(!audio.includes("-preset"));
   });
 
   test("WebM keeps Opus audio (regression: a later -c:a aac used to override it)", () => {
@@ -174,6 +211,13 @@ describe("buildArgs", () => {
 
   test("rejects unknown formats when re-encoding", () => {
     assert.throws(() => buildArgs({ ...base, outputExt: "xyz" }), /Unsupported/);
+  });
+});
+
+describe("FORMATS", () => {
+  test("only the H.264 formats offer the speed setting", () => {
+    assert.deepEqual(FORMATS.video.filter((format) => format.usesSpeed).map((format) => format.ext), ["mp4", "mkv"]);
+    assert.ok(!FORMATS.audio.some((format) => format.usesSpeed));
   });
 });
 

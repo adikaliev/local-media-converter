@@ -5,9 +5,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Encoding speed choice for MP4 and MKV: Balanced (`veryfast`, the default) or Fast (`ultrafast`). In a test, Fast was about 2.6 times quicker and made files about 2.7 times bigger.
+
 ### Changed
 
 - Package and GitHub repo renamed to `local-media-converter`. The local folder stays `media_converter`, and the page title stays "Media Converter".
+- The limitations now give a measured example of re-encoding speed.
+
+### Fixed
+
+- The progress bar could jump to 100% at the start of a conversion, because the FFmpeg engine sometimes reports a garbage time first.
+- On phones, fields had large empty gaps between them and the page was wider than the screen.
+- Browsers no longer get a 404 when asking for a site icon.
 
 ## [1.0.0] - 2026-11-02
 

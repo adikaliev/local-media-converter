@@ -10,7 +10,7 @@ no build step, made to be hosted on GitHub Pages.
 - Audio only to MP3, M4A (AAC), WAV or FLAC
 - **Fast copy**: changes the container or trims without re-encoding. Almost instant and lossless.
 - Trim by start/end time, in seconds (`90`) or `m:ss` / `h:mm:ss` (`1:30`)
-- Video quality slider and audio bitrate
+- Video quality slider, audio bitrate, and an encoding speed choice for MP4 and MKV
 - Progress bar, live FFmpeg log, Cancel button, drag and drop
 
 ## Limitations
@@ -20,7 +20,7 @@ These are also shown to users in the page's "Good to know" panel. Keep both list
 | Area | Limitation |
 |---|---|
 | First use | The FFmpeg engine (32 MB, about 9 MB compressed) downloads from jsDelivr, or unpkg as fallback, then the browser caches it. Networks that block both CDNs can't use the app. |
-| Speed | The single-threaded FFmpeg build runs on one CPU core, much slower than desktop FFmpeg. The faster multi-threaded build needs `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers, which GitHub Pages can't send. |
+| Speed | The single-threaded FFmpeg build runs on one CPU core, much slower than desktop FFmpeg. In one test, re-encoding a 20-second 720p clip to MP4 took about 2 minutes, against 4.4 s for desktop FFmpeg on one thread, so long videos can take hours. Fast copy and audio-only output usually take seconds, and the Fast encoding speed helps with MP4 and MKV (2-3 times quicker, with files 2-3 times bigger). The faster multi-threaded build needs `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers, which GitHub Pages can't send. |
 | Size | WebAssembly memory is capped at 2 GB, and lower on phones. The input file is streamed, but the output has to fit in memory. Very large files fail. |
 | Fast copy | Cuts snap to the previous keyframe, so the result can start earlier than requested. It fails when the source codecs don't fit the target container; MKV accepts almost anything. |
 | Tracks | Only the default video and audio track are kept. Subtitles, data tracks and extra audio tracks are dropped. |

@@ -116,6 +116,56 @@ test.describe("conversions", () => {
     expect(SIGNATURES.mp4(result.bytes)).toBe(true);
   });
 
+  test("the speed setting picks the H.264 preset, for MP4 and MKV only", async () => {
+    const speed = page.locator("#speedSelect");
+    const log = page.locator("#ffmpegLog");
+
+    await choose(page, { format: "mp4" });
+    await expect(speed).toBeEnabled();
+    await expect(speed).toHaveValue("balanced");
+    await convert(page, { format: "mp4" });
+    await expect(log).toContainText("-preset veryfast");
+
+    await speed.selectOption("fast");
+    for (const format of ["mp4", "mkv"]) {
+      const result = await convert(page, { format });
+      expect(SIGNATURES[format](result.bytes)).toBe(true);
+      await expect(log).toContainText("-preset ultrafast");
+    }
+
+    for (const options of [
+      { format: "webm" },
+      { format: "avi" },
+      { mode: "audio", format: "mp3" },
+      { method: "copy", format: "mkv" }
+    ]) {
+      await choose(page, options);
+      await expect(speed, JSON.stringify(options)).toBeDisabled();
+    }
+
+    await choose(page, { format: "mp4" });
+    await speed.selectOption("balanced");
+  });
+
+  test("the progress bar only moves forward, also on later runs", async () => {
+    for (let run = 1; run <= 5; run++) {
+      await page.evaluate(() => {
+        window.__progress = [];
+        window.__timer = setInterval(() => {
+          const bar = document.getElementById("progressBar");
+          if (!bar.hidden) window.__progress.push(bar.value);
+        }, 10);
+      });
+      await convert(page, { format: "mp4" });
+      const samples = await page.evaluate(() => {
+        clearInterval(window.__timer);
+        return window.__progress;
+      });
+      const backwards = samples.findIndex((value, index) => index > 0 && value < samples[index - 1]);
+      expect(backwards, `run ${run}: ${samples.slice(0, 12).join(", ")}`).toBe(-1);
+    }
+  });
+
   test("rejects an invalid trim range without running FFmpeg", async () => {
     await choose(page, { format: "mp4", start: "2", end: "1" });
     await page.click("#convertButton");
@@ -142,3 +192,31 @@ test("page shows the limitations and needs a file before converting", async ({ p
   await expect(page.locator("#convertButton")).toBeDisabled();
   await expect(page.locator("#downloadLink")).toBeHidden();
 });
+
+test("page has its own icon, so browsers don't request a missing favicon", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('link[rel="icon"]')).toHaveCount(1);
+});
+
+for (const width of [390, 320]) {
+  test(`fits a ${width} px wide phone screen, without gaps between fields`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    // A long unbroken file name is the hardest case for the width.
+    await page.setInputFiles("#sourceFile", { name: `${"long-name-".repeat(15)}.mp4`, mimeType: "video/mp4", buffer: Buffer.alloc(16) });
+    await expect(page.locator("#fileInfo")).toContainText("long-name-");
+
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(width);
+
+    for (const label of await page.locator(".inline label").all()) {
+      const box = await label.boundingBox();
+      expect(box.height).toBeLessThan(150);
+      expect(box.x + box.width).toBeLessThanOrEqual(width);
+    }
+    for (const control of await page.locator("input, select, button:visible").all()) {
+      const box = await control.boundingBox();
+      expect(box.x + box.width).toBeLessThanOrEqual(width);
+    }
+  });
+}

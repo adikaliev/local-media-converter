@@ -5,14 +5,19 @@ export const SOURCE_FORMAT = "source";
 
 export const QUALITY = { min: 15, max: 35, default: 23 };
 
-const EVEN_SIZE = "scale=trunc(iw/2)*2:trunc(ih/2)*2"; // H.264/VP9 with yuv420p need even width and height
+const EVEN_SIZE = "scale=trunc(iw/2)*2:trunc(ih/2)*2"; // H.264/VP8 with yuv420p need even width and height
 const FASTSTART_EXTS = new Set(["mp4", "m4v", "m4a", "mov"]);
 
 // The quality slider uses the x264 CRF scale; other encoders get a matching value.
 const vp8Crf = (quality) => quality - 11;
 const mpeg4Q = (quality) => Math.round((quality - QUALITY.min) / 2) + 2;
 
-const h264 = (quality) => ["-c:v", "libx264", "-preset", "veryfast", "-crf", String(quality), "-pix_fmt", "yuv420p", "-vf", EVEN_SIZE];
+// Measured on 5 s of 720p: ultrafast took 9 s and made 3.7 MB; veryfast took 23 s and made 1.4 MB.
+const H264_PRESETS = { balanced: "veryfast", fast: "ultrafast" };
+
+const h264 = (quality, speed = "balanced") => [
+  "-c:v", "libx264", "-preset", H264_PRESETS[speed], "-crf", String(quality), "-pix_fmt", "yuv420p", "-vf", EVEN_SIZE
+];
 
 export const FORMATS = {
   video: [
@@ -21,14 +26,16 @@ export const FORMATS = {
       name: "MP4",
       codecs: "H.264 + AAC",
       mime: "video/mp4",
-      encodeArgs: ({ quality, audioBitrate }) => [...h264(quality), "-c:a", "aac", "-b:a", `${audioBitrate}k`]
+      usesSpeed: true,
+      encodeArgs: ({ quality, audioBitrate, speed }) => [...h264(quality, speed), "-c:a", "aac", "-b:a", `${audioBitrate}k`]
     },
     {
       ext: "mkv",
       name: "MKV",
       codecs: "H.264 + AAC",
       mime: "video/x-matroska",
-      encodeArgs: ({ quality, audioBitrate }) => [...h264(quality), "-c:a", "aac", "-b:a", `${audioBitrate}k`]
+      usesSpeed: true,
+      encodeArgs: ({ quality, audioBitrate, speed }) => [...h264(quality, speed), "-c:a", "aac", "-b:a", `${audioBitrate}k`]
     },
     {
       // VP8 rather than VP9: libvpx-vp9 crashes ("memory access out of bounds") in @ffmpeg/core 0.12.10.
@@ -142,7 +149,18 @@ export function expectedDuration(trim, duration) {
   return null;
 }
 
-export function buildArgs({ inputPath, outputPath, outputExt, mode, method, trim, quality, audioBitrate }) {
+/**
+ * Turns an FFmpeg progress event into a 0-1 ratio, or null if the event is unusable.
+ * The engine sometimes starts a run with a garbage time (INT64_MAX), which would read as 100%.
+ */
+export function progressRatio({ progress, time }, expected) {
+  if (!Number.isFinite(time) || time < 0 || time > Number.MAX_SAFE_INTEGER) return null;
+  // FFmpeg's own ratio is relative to the whole input, so prefer the trimmed length when known.
+  const ratio = expected ? time / 1e6 / expected : progress;
+  return Number.isFinite(ratio) ? Math.min(Math.max(ratio, 0), 1) : null;
+}
+
+export function buildArgs({ inputPath, outputPath, outputExt, mode, method, trim, quality, audioBitrate, speed }) {
   const args = ["-hide_banner"];
   if (trim.start > 0) args.push("-ss", formatSeconds(trim.start));
   if (trim.end !== null) args.push("-t", formatSeconds(trim.end - trim.start));
@@ -157,7 +175,7 @@ export function buildArgs({ inputPath, outputPath, outputExt, mode, method, trim
   } else {
     const format = findFormat(mode, outputExt);
     if (!format) throw new Error(`Unsupported ${mode} format: ${outputExt}`);
-    args.push(...format.encodeArgs({ quality, audioBitrate }));
+    args.push(...format.encodeArgs({ quality, audioBitrate, speed }));
   }
 
   if (FASTSTART_EXTS.has(outputExt)) args.push("-movflags", "+faststart");

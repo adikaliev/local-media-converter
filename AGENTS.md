@@ -33,6 +33,7 @@ Browser-only audio/video converter built on ffmpeg.wasm and hosted as a static s
   calls `terminate()` and reloads, because the instance may be in a bad state. Reloading is quick: the downloaded
   files are kept as blob URLs.
 - Every run logs a final `Aborted()` line, even on success. The app hides it.
+- A run can start with a garbage progress event (`time` is INT64_MAX). `progressRatio` in `js/media.js` drops it.
 - `libvpx-vp9` crashes in `@ffmpeg/core` 0.12.10 with any settings, so WebM uses VP8.
 - Input files are mounted with WORKERFS, not copied into memory. Output still lives in WebAssembly memory, which is
   capped at 2 GB.
