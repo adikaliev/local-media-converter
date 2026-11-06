@@ -1,6 +1,6 @@
 # Media Converter: agent instructions
 
-The repo and package are `local-media-converter`; the local folder is `media_converter`. The mismatch is intentional.
+The repo, package and local folder are all named `local-media-converter`.
 
 Browser-only audio/video converter built on ffmpeg.wasm and hosted as a static site on GitHub Pages. Read
 [README.md](README.md) for setup, limitations and the FFmpeg upgrade steps.

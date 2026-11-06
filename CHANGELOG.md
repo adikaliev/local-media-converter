@@ -11,7 +11,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
-- Package and GitHub repo renamed to `local-media-converter`. The local folder stays `media_converter`, and the page title stays "Media Converter".
+- Package, GitHub repo and local folder renamed to `local-media-converter`. The page title stays "Media Converter".
 - The limitations now give a measured example of re-encoding speed.
 
 ### Fixed
